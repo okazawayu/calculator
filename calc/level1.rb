@@ -48,8 +48,7 @@ class Calc
     @inputFormula = gets.chomp
     checkFormula(@inputFormula)
     tokens = lexicalAnalysis(@inputFormula)
-    tokens = syntaxAnalysis(tokens)
-    puts tokens
+    puts syntaxAnalysis(tokens)
   end
 
 
@@ -172,9 +171,6 @@ class Calc
       return num1 / num2
     end
   end
-
-
-  private
 
   def setArray(formula)
     @formulaArray = formula.split("")
