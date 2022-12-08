@@ -45,25 +45,28 @@ tokens[0] = 6
 class Calc
 
   def initialize
-    @inputFormula = gets.chomp
-    checkFormula(@inputFormula)
-    tokens = lexicalAnalysis(@inputFormula)
-    puts syntaxAnalysis(tokens)
+    if __FILE__ == $0
+      input = gets.chomp
+      puts calc_main(input)
+    end
   end
 
+  def calc_main(input)
+    checkResult = checkFormula(input)
+    if checkResult != nil then
+      return checkResult
+    else
+      tokens = lexicalAnalysis(input)
+      return syntaxAnalysis(tokens)
+    end
+  end
 
 
   def checkFormula(formula)
     #(a)数式に[0-9],"+","-","*","/"以外の文字が含まれていた場合エラーを返す
-    if formula.match(/[0-9\+\-\*\/]/) == nil then
-      puts "Formula is not appropriate"
-      exit
-    end
     #(b)数式の先頭、末尾が数値以外の場合エラーを返す
-    head = formula[0].match(/[0-9]/)
-    tail = formula[formula.length-1].match(/[0-9]/)
-    if head == nil || tail == nil then
-      puts "Formula is not appropriate"
+    if (formula =~ /^[0-9][0-9\*\+\-\/]*[0-9]$/) == nil then
+      return "Error Message 1 : Formula is not appropriate"
       exit
     end
     #(c)数式内で"+","-","*","/"が連続した場合エラーを返す
@@ -73,12 +76,13 @@ class Calc
       if c.match(/[0-9]/) != nil then
         preC = 'D'
       elsif preC == 'O' then
-        puts "Formula is not appropriate"
+        return "Formula is not appropriate"
         exit
       else
         preC = 'O'
       end
     end
+    return nil
   end
 
   def lexicalAnalysis(formula)
@@ -140,7 +144,7 @@ class Calc
         end
       end
     end
-    return tokens
+    return tokens[0]
   end
 
 
