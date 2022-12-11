@@ -1,6 +1,6 @@
 '
 ①エラーチェック
-(a)数式の先頭、末尾が数値以外の場合エラーを返す
+(a)数式の先頭、末尾が数字以外の場合エラーを返す
 (b)数式内で"+","-","*","/"が連続した場合エラーを返す
 (c)数式に[0-9],"+","-","*","/"以外の文字が含まれていた場合エラーを返す
 
@@ -45,6 +45,7 @@ tokens[0] = 6
 class Calc
 
   def initialize
+    #コマンドラインから入力された時、標準入出力を受け付ける。(テスト時には受け付けない。)
     if __FILE__ == $0
       input = gets.chomp
       puts calc_main(input)
@@ -52,6 +53,7 @@ class Calc
   end
 
   def calc_main(input)
+    #数式が正しくない場合はエラーメッセージを表示する。
     checkResult = checkFormula(input)
     if checkResult != nil then
       return checkResult
@@ -64,7 +66,7 @@ class Calc
 
   def checkFormula(formula)
     #(a)数式に[0-9],"+","-","*","/"以外の文字が含まれていた場合エラーを返す
-    #(b)数式の先頭、末尾が数値以外の場合エラーを返す
+    #(b)数式の先頭、末尾が数字以外の場合エラーを返す
     if (formula =~ /^[0-9][0-9\*\+\-\/]*[0-9]$/) == nil then
       return "Error Message 1 : Formula is not appropriate"
       exit
@@ -76,7 +78,7 @@ class Calc
       if c.match(/[0-9]/) != nil then
         preC = 'D'
       elsif preC == 'O' then
-        return "Formula is not appropriate"
+        return "Error Message 1 : Formula is not appropriate"
         exit
       else
         preC = 'O'
@@ -89,13 +91,9 @@ class Calc
     #(a)入力した数式について、一文字づつ変換する。
     #(b)連続数を数値として判別し配列に格納する。
     setArray(formula)
-    return firstConversion(@formulaArray)
-  end
-
-  def firstConversion(array)
     tokens = []
     preC = ''
-    array.each do |c|
+    @formulaArray.each do |c|
       if c.match(/[0-9]/) then
         #数字が連続する場合、preCに結合していくことで対応
         preC = fixInteger(preC,c)
