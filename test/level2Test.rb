@@ -1,22 +1,22 @@
 require 'minitest/autorun'
-require_relative '../calc/level1.rb'
+require_relative '../calc/level2.rb'
 
 class Test < Minitest::Test
   def setup
     @calc = Calc.new
   end
 
-  def test_level1_normal1
+  def test_level2_normal1
     #正常系テスト
     #正しく数式が入力された時、適切な計算結果が返ってくること。
     setup
-    formula = '40/2+2*4-24/3*2'
+    formula = '40/2+2*4-24/3*2+2E2+0.1'
     actual = @calc.calc_main(formula)
-    expected = 12
+    expected = 212.1
     assert_equal expected, actual
   end
 
-  def test_level1_abnormal1
+  def test_level2_abnormal1
     #異常系テスト
     #数式内に不適切な文字が含まれていた場合、エラーメッセージを返すこと。
     setup
@@ -26,7 +26,7 @@ class Test < Minitest::Test
     assert_equal expected, actual
   end
 
-  def test_level1_abnormal2
+  def test_level2_abnormal2
     #異常系テスト
     #数式の先頭が数字以外であった場合、エラーメッセージを返すこと。
     setup
@@ -36,7 +36,7 @@ class Test < Minitest::Test
     assert_equal expected, actual
   end
 
-  def test_level1_abnormal3
+  def test_level2_abnormal3
     #異常系テスト
     #数式の末尾が数字以外であった場合、エラーメッセージを返すこと。
     setup
@@ -51,6 +51,16 @@ class Test < Minitest::Test
     #数式内で演算子が連続した場合、エラーメッセージを返すこと。
     setup
     formula = '40/*2+2*4-24/3*2'
+    actual = @calc.calc_main(formula)
+    expected = 'Error Message 1 : Formula is not appropriate'
+    assert_equal expected, actual
+  end
+
+  def test_level1_abnormal5
+    #異常系テスト
+    #演算子間に"."が2回以上含まれていた場合、エラーメッセージを返すこと。
+    setup
+    formula = '40/*2+2*4-24/3*2+1.1.1'
     actual = @calc.calc_main(formula)
     expected = 'Error Message 1 : Formula is not appropriate'
     assert_equal expected, actual

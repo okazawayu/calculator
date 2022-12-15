@@ -1,28 +1,32 @@
 '
 ①エラーチェック
-(a)数式に[0-9],"+","-","*","/"以外の文字が含まれていた場合エラーを返す
+(a)数式に[0-9],"+","-","*","/","E","."以外の文字が含まれていた場合エラーを返す
 (b)数式の先頭、末尾が数字以外の場合エラーを返す
-(c)数式内で"+","-","*","/"が連続した場合エラーを返す
+(c)数式内で"+","-","*","/","E","."が連続した場合エラーを返す
+
 
 ②字句解析
-(a)入力した数式について、演算子を以下の通り一文字づつ変換する。
+(a)入力した数式について、演算子,小数点および指数表記を以下の通り一文字づつ変換する。
 "+" → a
 "-" → s
 "*" → m
 "/" → d
+"E" → e
 (例)
 3*2+1-4/2 → 3m2a1s4d2
 12/2+2*3 → 12d2a2m3
 
-(b)連続数を数値として判別し配列に格納する。
+(b)連続した数字（数字間に小数点が含まれている場合も含む）を数値として判別し配列に格納する。
+この時、演算子間に"."が2回以上含まれていた場合エラーを返す。
 (例)
 3*2+1-4/2 → "3","m","2","a","1","s","4","d","2"
 12/2+2*3 → "12","d","2","a","2","m","3"
-
+3.2*2+2.1/7+2E2 → "3.2","m","2","a","2.1","d","7","2","e","2"
+1.2.3*2 → エラー
 
 ③構文解析
 (a)数式の計算順を定める。
-(m,d) → (a,s)の順で計算する。
+(e) → (m,d) → (a,s)の順で計算する。
 ②で変換した文字の配列を"tokens"と定義する。
 また、数式の計算順を記憶する配列を"queue"と定義する。
 (ア)tokensの先頭の要素から確認し、m,dが出現したらその要素番号をqueueに格納する。
@@ -66,13 +70,13 @@ class Calc
 
 
   def checkFormula(formula)
-    #(a)数式に[0-9],"+","-","*","/"以外の文字が含まれていた場合エラーを返す
+    #(a)数式に[0-9],"+","-","*","/","E","."以外の文字が含まれていた場合エラーを返す
     #(b)数式の先頭、末尾が数字以外の場合エラーを返す
-    if (formula =~ /^[0-9][0-9\*\+\-\/]*[0-9]$/) == nil then
+    if (formula =~ /^[0-9][0-9\*\+\-\/\E\.]*[0-9]$/) == nil then
       return "Error Message 1 : Formula is not appropriate"
       exit
     end
-    #(c)数式内で"+","-","*","/"が連続した場合エラーを返す
+    #(c)数式内で"+","-","*","/","E","."が連続した場合エラーを返す
     setArray(formula)
     preC = ''
     @formulaArray.each do |c|
@@ -94,13 +98,15 @@ class Calc
     setArray(formula)
     tokens = []
     preC = ''
+    countD = 0
     @formulaArray.each do |c|
-      if c.match(/[0-9]/) then
+      if c.match(/[0-9\.]/) then
         #数字が連続する場合、preCに結合していくことで対応
-        preC = fixInteger(preC,c)
+        preC,countD = fixInteger(preC,c,countD)
       else
         #演算子の場合、preCが数値で確定するので配列に格納
         tokens << preC.to_f
+        countD = 0
         preC = c
         case c
         when '+' then
@@ -111,6 +117,8 @@ class Calc
           tokens << 'm'
         when '/' then
           tokens << 'd'
+        when 'E' then
+          tokens << 'e'
         end
       end 
     end
@@ -118,14 +126,23 @@ class Calc
     return tokens
   end
 
-  def fixInteger(preC,c)
-    if preC.match(/[0-9]/) then
+  def fixInteger(preC,c,countD)
+    if preC.match(/[0-9\.]/) then
       preC = preC + c
     else
       preC = c
     end
-    return preC
+    #演算子間に"."が2回以上含まれていた場合エラーを返す。
+    if c.match(/[\.]/) then
+      countD += 1 
+      if countD >= 2 then
+        puts "Error Message 1 : Formula is not appropriate"
+        exit
+      end
+    end
+    return preC,countD
   end
+
 
   def syntaxAnalysis(tokens)
     #queueを作成する
@@ -150,8 +167,13 @@ class Calc
 
   def setQueue(tokens)
     #(a)数式の計算順を定める。
-    #(m,d) → (a,s)の順で計算する。
+    #(e) → (m,d) → (a,s)の順で計算する。
     queue = []
+    tokens.each_with_index do |c,i|
+      if c == 'e' 
+        queue << i
+      end
+    end
     tokens.each_with_index do |c,i|
       if c == 'm' || c == 'd' then
         queue << i
@@ -175,6 +197,8 @@ class Calc
       return num1 * num2
     when 'd' then
       return num1 / num2
+    when 'e' then
+      return num1 * (10 ** num2)
     end
   end
 
