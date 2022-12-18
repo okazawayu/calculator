@@ -79,16 +79,20 @@ class Calc
     #数式が正しくない場合はエラーメッセージを表示する。
     checkResult = checkFormula(input)
     if checkResult != nil then
-      return checkResult
+      return outputErrorMessage(checkResult)
     else
       @tokens = lexicalAnalysis(input)
-      block = []
-      while !@tokens.empty? do
-        c = @tokens.shift
-        if c == 'l' then
-          block.concat(calculateParenthesis([]))
-        else
-          block << c
+      if !@tokens.instance_of?(Array) then
+        return outputErrorMessage(@tokens)
+      else 
+        block = []
+        while !@tokens.empty? do
+          c = @tokens.shift
+          if c == 'l' then
+            block.concat(calculateParenthesis([]))
+          else
+            block << c
+          end
         end
       end
       return syntaxAnalysis(block)
@@ -100,8 +104,7 @@ class Calc
     #(a)数式に[0-9],"+","-","*","/","E","."以外の文字が含まれていた場合エラーを返す
     #(b)数式の先頭、末尾が数字以外の場合エラーを返す
     if (formula =~ /^[0-9()][0-9\*\+\-\/\E\.()]*[0-9)]$/) == nil then
-      return "Error Message 1 : Formula is not appropriate"
-      exit
+      return "Error1"
     end
     #(c)数式内で"+","-","*","/","E","."が連続した場合エラーを返す
     setArray(formula)
@@ -117,22 +120,19 @@ class Calc
         pNum -=1
         #(d)数式を左から確認し、")"の個数が"("を超過した場合エラーを返す
         if pNum < 0 then
-          return "Error Message 1 : Formula is not appropriate"
-          exit
+          return "Error4"
         end
         preC = 'r'
       else
         if preC == 'O' then
-          return "Error Message 1 : Formula is not appropriate"
-          exit
+          return "Error2"
         end
         preC = 'O'
       end
     end
     #(e)")"の個数と"("の個数が異なっていた場合エラーを返す
     if pNum != 0 then
-      return "Error Message 1 : Formula is not appropriate"
-      exit
+      return "Error5"
     end
     # (f)以下の規則から外れていた場合、エラーを返す
     # ・"("の前が数字、")"、"."の場合エラーを返す
@@ -143,38 +143,32 @@ class Calc
     @formulaArray.each do |c|
       if c == '(' then
         if preC.match(/[0-9]/) != nil || preC ==  'r' || preC ==  'd' 
-          return "Error Message 1 : Formula is not appropriate"
-          exit
+          return "Error6"
         end
         preC = 'l'
       elsif c == ')' then
         if preC ==  'l' || preC ==  'e' || preC ==  'd' || preC == 'o'
-          return "Error Message 1 : Formula is not appropriate"
-          exit
+          return "Error6"
         end
         preC = 'r'
       elsif c == '.' then
         if preC == 'l' || preC == 'r' 
-          return "Error Message 1 : Formula is not appropriate"
-          exit
+          return "Error6"
         end
         preC = 'd'
       elsif c == 'E' then
         if preC == 'l' then
-          return "Error Message 1 : Formula is not appropriate"
-          exit
+          return "Error6"
         end
         preC = 'e'
       elsif c.match(/[0-9]/) != nil then
         if preC == 'r' then
-          return "Error Message 1 : Formula is not appropriate"
-          exit
+          return "Error6"
         end
         preC = c
       else
         if preC == 'l' then
-          return "Error Message 1 : Formula is not appropriate"
-          exit
+          return "Error6"
         end
         preC = 'o'
       end 
@@ -188,16 +182,19 @@ class Calc
     setArray(formula)
     tokens = []
     preC = ''
-    countD = 0
+    @countD = 0
     @formulaArray.each do |c|
       if c.match(/[0-9\.]/) then
         #数字が連続する場合、preCに結合していくことで対応
-        preC,countD = fixInteger(preC,c,countD)
+        preC = fixInteger(preC,c)
+        if preC == "Error3" then
+          return "Error3"
+        end
       else
         if preC.match(/[0-9]/) then
           #演算子の場合、preCが数値で確定するので配列に格納
           tokens << preC.to_f
-          countD = 0
+          @countD = 0
           preC = c
         end
         case c
@@ -224,7 +221,7 @@ class Calc
     return tokens
   end
 
-  def fixInteger(preC,c,countD)
+  def fixInteger(preC,c)
     if preC.match(/[0-9\.]/) then
       preC = preC + c
     else
@@ -232,13 +229,12 @@ class Calc
     end
     #演算子間に"."が2回以上含まれていた場合エラーを返す。
     if c.match(/[\.]/) then
-      countD += 1 
-      if countD >= 2 then
-        puts "Error Message 1 : Formula is not appropriate"
-        exit
+      @countD += 1 
+      if @countD >= 2 then
+        return "Error3"
       end
     end
-    return preC,countD
+    return preC
   end
 
   def calculateParenthesis(outerBlock)
@@ -319,6 +315,22 @@ class Calc
     @formulaArray = formula.split("")
   end
 
+  def outputErrorMessage(errorNum)
+    case errorNum
+    when "Error1" then
+      return "Error Message 1 : 数式に[0-9],'+','-','*','/','E','.'以外の文字が含まれているか、先頭、末尾に不適切な文字が入力されています"
+    when "Error2" then
+      return "Error Message 2 : 数式内で'+','-','*','/','E','.'が連続して入力されています"
+    when "Error3" then
+      return "Error Message 3 : 演算子間に'.'が2回以上入力されています"
+    when "Error4" then
+      return "Error Message 4 : 数式の途中で')'の個数が'('を超過しています"
+    when "Error5" then
+      return "Error Message 5 : ')'の個数と'('の個数が異なります"
+    when "Error6" then
+      return "Error Message 6 : ')'もしくは'('の前後に不適切な文字が入力されています"
+    end
+  end
 end
 
 Calc.new
