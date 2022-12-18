@@ -1,39 +1,56 @@
 '
 ①エラーチェック
 (a)数式に[0-9],"+","-","*","/","E","."以外の文字が含まれていた場合エラーを返す
-(b)数式の先頭、末尾が数字以外の場合エラーを返す
+(b)数式の先頭が数字もしくは"("、末尾が数字もしくは")"以外の場合エラーを返す
 (c)数式内で"+","-","*","/","E","."が連続した場合エラーを返す
+(d)数式を左から確認し、")"の個数が"("を超過した場合エラーを返す
+(e)")"の個数と"("の個数が異なっていた場合エラーを返す
+(f)以下の規則から外れていた場合、エラーを返す
+・"("の前は演算子,"E","("のいずれかであること
+・"("の後ろは数字,"("のいずれかであること
+・")"の前は数字,")"のいずれかであること
+・")"の後ろは演算子、"E",")"のいずれかであること
 
 
 ②字句解析
-(a)入力した数式について、演算子,指数表記を以下の通り一文字づつ変換する。
+(a)入力した数式について、演算子、指数表記、括弧を以下の通り一文字づつ変換する。
 "+" → a
 "-" → s
 "*" → m
 "/" → d
 "E" → e
+"(" → l
+")" → r
 (例)
 3*2+1-4/2 → 3m2a1s4d2
 12/2+2*3 → 12d2a2m3
 3.2*2+2.1/7+2E2 →3.2m2a2.1d7a2e2
+3*(2+1)E2 →3ml2a1re2
 
 (b)連続した数字（数字間に小数点が含まれている場合も含む）を数値として判別し配列に格納する。
 この時、演算子間に"."が2回以上含まれていた場合エラーを返す。
 (例)
 3*2+1-4/2 → "3","m","2","a","1","s","4","d","2"
 12/2+2*3 → "12","d","2","a","2","m","3"
-3.2*2+2.1/7+2E2 → "3.2","m","2","a","2.1","d","7","a","2","e","2"
+3.2*2+2.1/7+2E2 → "3.2","m","2","a","2.1","d","7","2","e","2"
 1.2.3*2 → エラー
 
 ③構文解析
-(a)数式の計算順を定める。
-(e) → (m,d) → (a,s)の順で計算する。
+(a)()内を再帰的に計算する。
 ②で変換した文字の配列を"tokens"と定義する。
-また、数式の計算順を記憶する配列を"queue"と定義する。
+”l”と”r”で囲まれた部分を"block"と定義する。
+tokensを先頭から確認し、”l”が出現したら"r"が出現するまで探索を続ける。
+途中"l"が出現した場合、再帰的に探索する。
+対応する"l"~"r"が確認できたら、そのblockを計算する。
+
+
+(b)数式の計算順を定める。
+(e) → (m,d) → (a,s)の順で計算する。
+数式の計算順を記憶する配列を"queue"と定義する。
 (ア)tokensの先頭の要素から確認し、m,dが出現したらその要素番号をqueueに格納する。
 (イ)(ア)完了後、再度tokensの先頭の要素から確認し、a,sが出現したらその要素番号をqueueに格納する。
 
-(b)queueに格納された計算順に従いtokensを計算する。
+(c)queueに格納された計算順に従いtokensを計算する。
 queue.shiftで得られた要素番号について、該当の演算子および前後の数値を取得し計算する。
 計算が完了した要素は、その計算結果をtokensに上書きし残りを削除する。
 (例)
@@ -64,8 +81,17 @@ class Calc
     if checkResult != nil then
       return checkResult
     else
-      tokens = lexicalAnalysis(input)
-      return syntaxAnalysis(tokens)
+      @tokens = lexicalAnalysis(input)
+      block = []
+      while !@tokens.empty? do
+        c = @tokens.shift
+        if c == 'l' then
+          block.concat(calculateParenthesis([]))
+        else
+          block << c
+        end
+      end
+      return syntaxAnalysis(block)
     end
   end
 
@@ -73,22 +99,85 @@ class Calc
   def checkFormula(formula)
     #(a)数式に[0-9],"+","-","*","/","E","."以外の文字が含まれていた場合エラーを返す
     #(b)数式の先頭、末尾が数字以外の場合エラーを返す
-    if (formula =~ /^[0-9][0-9\*\+\-\/\E\.]*[0-9]$/) == nil then
+    if (formula =~ /^[0-9()][0-9\*\+\-\/\E\.()]*[0-9)]$/) == nil then
       return "Error Message 1 : Formula is not appropriate"
       exit
     end
     #(c)数式内で"+","-","*","/","E","."が連続した場合エラーを返す
     setArray(formula)
     preC = ''
+    pNum = 0
     @formulaArray.each do |c|
       if c.match(/[0-9]/) != nil then
         preC = 'D'
-      elsif preC == 'O' then
-        return "Error Message 1 : Formula is not appropriate"
-        exit
+      elsif c == '(' then
+        pNum +=1
+        preC = 'l'
+      elsif c == ')' then
+        pNum -=1
+        #(d)数式を左から確認し、")"の個数が"("を超過した場合エラーを返す
+        if pNum < 0 then
+          return "Error Message 1 : Formula is not appropriate"
+          exit
+        end
+        preC = 'r'
       else
+        if preC == 'O' then
+          return "Error Message 1 : Formula is not appropriate"
+          exit
+        end
         preC = 'O'
       end
+    end
+    #(e)")"の個数と"("の個数が異なっていた場合エラーを返す
+    if pNum != 0 then
+      return "Error Message 1 : Formula is not appropriate"
+      exit
+    end
+    # (f)以下の規則から外れていた場合、エラーを返す
+    # ・"("の前が数字、")"、"."の場合エラーを返す
+    # ・"("の後ろが演算子、")"、"."、"E"の場合エラーを返す
+    # ・")"の前が演算子、"("、"E"、"."の場合エラーを返す
+    # ・")"の後ろが数字、"."、"("の場合エラーを返す 
+    preC = ''
+    @formulaArray.each do |c|
+      if c == '(' then
+        if preC.match(/[0-9]/) != nil || preC ==  'r' || preC ==  'd' 
+          return "Error Message 1 : Formula is not appropriate"
+          exit
+        end
+        preC = 'l'
+      elsif c == ')' then
+        if preC ==  'l' || preC ==  'e' || preC ==  'd' || preC == 'o'
+          return "Error Message 1 : Formula is not appropriate"
+          exit
+        end
+        preC = 'r'
+      elsif c == '.' then
+        if preC == 'l' || preC == 'r' 
+          return "Error Message 1 : Formula is not appropriate"
+          exit
+        end
+        preC = 'd'
+      elsif c == 'E' then
+        if preC == 'l' then
+          return "Error Message 1 : Formula is not appropriate"
+          exit
+        end
+        preC = 'e'
+      elsif c.match(/[0-9]/) != nil then
+        if preC == 'r' then
+          return "Error Message 1 : Formula is not appropriate"
+          exit
+        end
+        preC = c
+      else
+        if preC == 'l' then
+          return "Error Message 1 : Formula is not appropriate"
+          exit
+        end
+        preC = 'o'
+      end 
     end
     return nil
   end
@@ -105,10 +194,12 @@ class Calc
         #数字が連続する場合、preCに結合していくことで対応
         preC,countD = fixInteger(preC,c,countD)
       else
-        #演算子の場合、preCが数値で確定するので配列に格納
-        tokens << preC.to_f
-        countD = 0
-        preC = c
+        if preC.match(/[0-9]/) then
+          #演算子の場合、preCが数値で確定するので配列に格納
+          tokens << preC.to_f
+          countD = 0
+          preC = c
+        end
         case c
         when '+' then
           tokens << 'a'
@@ -120,10 +211,16 @@ class Calc
           tokens << 'd'
         when 'E' then
           tokens << 'e'
+        when '(' then
+          tokens << 'l'
+        when ')' then
+          tokens << 'r'
         end
       end 
     end
-    tokens << preC.to_f
+    if preC.match(/[0-9]/) then
+      tokens << preC.to_f
+    end
     return tokens
   end
 
@@ -144,12 +241,27 @@ class Calc
     return preC,countD
   end
 
+  def calculateParenthesis(outerBlock)
+    #(a)()内を再帰的に計算する。
+    innerBlock = []
+    while !@tokens.empty? do
+      c = @tokens.shift
+      if c == 'l' then
+        outerBlock = calculateParenthesis(innerBlock)
+      elsif c == 'r' then
+        outerBlock << syntaxAnalysis(innerBlock)
+        return outerBlock
+      else
+        innerBlock << c
+      end
+    end
+  end
 
   def syntaxAnalysis(tokens)
     #queueを作成する
     queue = setQueue(tokens)
     num = queue.length
-    #(b)queueに格納された計算順に従いtokensを計算する。
+    #(c)queueに格納された計算順に従いtokensを計算する。
     num.times do
       opeNum = queue.shift
       #計算後、tokensを更新
@@ -167,7 +279,7 @@ class Calc
 
 
   def setQueue(tokens)
-    #(a)数式の計算順を定める。
+    #(b)数式の計算順を定める。
     #(e) → (m,d) → (a,s)の順で計算する。
     queue = []
     tokens.each_with_index do |c,i|
