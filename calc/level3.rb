@@ -45,7 +45,7 @@ tokensを先頭から確認し、”l”が出現したら"r"が出現するま�
 
 
 (b)数式の計算順を定める。
-(f) → (m,d) → (a,s)の順で計算する。
+(e) → (m,d) → (a,s)の順で計算する。
 数式の計算順を記憶する配列を"queue"と定義する。
 (ア)tokensの先頭の要素から確認し、m,dが出現したらその要素番号をqueueに格納する。
 (イ)(ア)完了後、再度tokensの先頭の要素から確認し、a,sが出現したらその要素番号をqueueに格納する。
@@ -142,13 +142,13 @@ class Calc
     preC = ''
     @formulaArray.each do |c|
       if c == '(' then
-        if preC.match(/[0-9]/) != nil || preC ==  'r' || preC ==  'd'
+        if preC.match(/[0-9]/) != nil || preC ==  'r' || preC ==  'd' 
           return "Error Message 1 : Formula is not appropriate"
           exit
         end
         preC = 'l'
       elsif c == ')' then
-        if preC ==  'l' || preC ==  'e' || preC ==  'd'
+        if preC ==  'l' || preC ==  'e' || preC ==  'd' || preC == 'o'
           return "Error Message 1 : Formula is not appropriate"
           exit
         end
@@ -280,7 +280,7 @@ class Calc
 
   def setQueue(tokens)
     #(b)数式の計算順を定める。
-    #(f) → (m,d) → (a,s)の順で計算する。
+    #(e) → (m,d) → (a,s)の順で計算する。
     queue = []
     tokens.each_with_index do |c,i|
       if c == 'e' 
