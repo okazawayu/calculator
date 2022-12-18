@@ -69,8 +69,7 @@ class Calc
     #(a)数式に[0-9],"+","-","*","/"以外の文字が含まれていた場合エラーを返す
     #(b)数式の先頭、末尾が数字以外の場合エラーを返す
     if (formula =~ /^[0-9][0-9\*\+\-\/]*[0-9]$/) == nil then
-      return "Error Message 1 : Formula is not appropriate"
-      exit
+      return "Error Message 1 : 数式に[0-9],'+','-','*','/'以外の文字が含まれているか、先頭、末尾に数字以外の文字が入力されています"
     end
     #(c)数式内で"+","-","*","/"が連続した場合エラーを返す
     setArray(formula)
@@ -79,8 +78,7 @@ class Calc
       if c.match(/[0-9]/) != nil then
         preC = 'D'
       elsif preC == 'O' then
-        return "Error Message 1 : Formula is not appropriate"
-        exit
+        return "Error Message 2 : 数式内で'+','-','*','/'が連続して入力されています"
       else
         preC = 'O'
       end

@@ -22,7 +22,7 @@ class Test < Minitest::Test
     setup
     formula = '40a2+2*4-24/3*2'
     actual = @calc.calc_main(formula)
-    expected = 'Error Message 1 : Formula is not appropriate'
+    expected = "Error Message 1 : 数式に[0-9],'+','-','*','/'以外の文字が含まれているか、先頭、末尾に数字以外の文字が入力されています"
     assert_equal expected, actual
   end
 
@@ -32,7 +32,7 @@ class Test < Minitest::Test
     setup
     formula = '+40/2+2*4-24/3*2'
     actual = @calc.calc_main(formula)
-    expected = 'Error Message 1 : Formula is not appropriate'
+    expected = "Error Message 1 : 数式に[0-9],'+','-','*','/'以外の文字が含まれているか、先頭、末尾に数字以外の文字が入力されています"
     assert_equal expected, actual
   end
 
@@ -42,7 +42,7 @@ class Test < Minitest::Test
     setup
     formula = '40/2+2*4-24/3*2*'
     actual = @calc.calc_main(formula)
-    expected = 'Error Message 1 : Formula is not appropriate'
+    expected = "Error Message 1 : 数式に[0-9],'+','-','*','/'以外の文字が含まれているか、先頭、末尾に数字以外の文字が入力されています"
     assert_equal expected, actual
   end
 
@@ -52,7 +52,7 @@ class Test < Minitest::Test
     setup
     formula = '40/*2+2*4-24/3*2'
     actual = @calc.calc_main(formula)
-    expected = 'Error Message 1 : Formula is not appropriate'
+    expected = "Error Message 2 : 数式内で'+','-','*','/'が連続して入力されています"
     assert_equal expected, actual
   end
 
