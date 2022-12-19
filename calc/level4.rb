@@ -1,6 +1,6 @@
 '
 ①エラーチェック
-(a)数式に[0-9],"+","-","*","/","E",".","cube"以外の文字が含まれていた場合エラーを返す
+(a)数式に[0-9],"+","-","*","/","E",".","cbrt"以外の文字が含まれていた場合エラーを返す
 (b)数式の先頭が数字もしくは"("、末尾が数字もしくは")"以外の場合エラーを返す
 (c)数式内で"+","-","*","/","E","."が連続した場合エラーを返す
 (d)数式を左から確認し、")"の個数が"("を超過した場合エラーを返す
@@ -10,12 +10,12 @@
 ・"("の後ろは数字,"("のいずれかであること
 ・")"の前は数字,")"のいずれかであること
 ・")"の後ろは演算子、"E",")"のいずれかであること
-(g)cube(x)を入力する際、形式が異なっていた場合エラーを返す
+(g)cbrt(x)を入力する際、形式が異なっていた場合エラーを返す
  ※xは任意の数式であり、xも(a)~(g)の規則を満たす必要がある
 
 
 ②字句解析
-(a)入力した数式について、演算子、指数表記、括弧および”cube”を以下の通り一文字づつ変換する。
+(a)入力した数式について、演算子、指数表記、括弧および”cbrt”を以下の通り一文字づつ変換する。
 "+" → a
 "-" → s
 "*" → m
@@ -23,13 +23,13 @@
 "E" → e
 "(" → l
 ")" → r
-"cube" → f
+"cbrt" → f
 (例)
 3*2+1-4/2 → 3m2a1s4d2
 12/2+2*3 → 12d2a2m3
 3.2*2+2.1/7+2E2 →3.2m2a2.1d7a2e2
 3*(2+1)E2 →3ml2a1re2
-cube(3*2+cube(2)) → fl3m2afl2rr
+cbrt(3*2+cbrt(2)) → fl3m2afl2rr
 
 (b)連続した数字（数字間に小数点が含まれている場合も含む）を数値として判別し配列に格納する。
 この時、演算子間に"."が2回以上含まれていた場合エラーを返す。
@@ -48,7 +48,7 @@ cube(3*2+cube(2)) → fl3m2afl2rr
 tokensを先頭から確認し、”l”が出現したら"r"が出現するまで探索を続ける。
 途中"l"が出現した場合、再帰的に探索する。
 対応する"l"~"r"が確認できたら、そのblockを計算する。
-更に、三乗根(cube)関数の変数と通常の括弧内の文字列を判別するために,
+更に、立方根(cbrt)関数の変数と通常の括弧内の文字列を判別するために,
 "f"が出現した時の場合分けを追加する。
 
 (b)数式の計算順を定める。
@@ -99,7 +99,7 @@ class Calc
             block.concat(calculateParenthesis([]))
           elsif c == 'f' then
             @tokens.shift
-            block << calcCube(calculateParenthesis([]))
+            block << calcCbrt(calculateParenthesis([]))
           else
             block << c
           end
@@ -111,9 +111,9 @@ class Calc
 
 
   def checkFormula(formula)
-    #(a)数式に[0-9],"+","-","*","/","E",".","cube"以外の文字が含まれていた場合エラーを返す
+    #(a)数式に[0-9],"+","-","*","/","E",".","cbrt"以外の文字が含まれていた場合エラーを返す
     #(b)数式の先頭、末尾が数字以外の場合エラーを返す
-    if (formula =~ /^(cube\(|[0-9()])(cube\(|[0-9\*\+\-\/\E\.()])*[0-9)]$/) == nil then
+    if (formula =~ /^(cbrt\(|[0-9()])(cbrt\(|[0-9\*\+\-\/\E\.()])*[0-9)]$/) == nil then
       return "Error1"
     end
     #(c)数式内で"+","-","*","/","E","."が連続した場合エラーを返す
@@ -125,16 +125,16 @@ class Calc
         preC = 'D'
       elsif c == '(' then
         pNum +=1
-        preC = 'l'
+        preC = 'L'
       elsif c == ')' then
         pNum -=1
         #(d)数式を左から確認し、")"の個数が"("を超過した場合エラーを返す
         if pNum < 0 then
           return "Error4"
         else
-          preC = 'r'
+          preC = 'R'
         end
-      elsif c == 'c' || c == 'u' || c == 'b' || c == 'e' then
+      elsif c == 'c' || c == 'b' || c == 'r' || c == 't' then
         preC = 'F'
       else
         if preC == 'O' then
@@ -156,39 +156,39 @@ class Calc
     preC = ''
     @formulaArray.each do |c|
       if c == '(' then
-        if preC.match(/[0-9]/) != nil || preC ==  'r' || preC ==  'd' 
+        if preC.match(/[0-9]/) != nil || preC ==  'R' || preC ==  'd' 
           return "Error6"
         end
-        preC = 'l'
+        preC = 'L'
       elsif c == ')' then
-        if preC ==  'l' || preC ==  'e' || preC ==  'd' || preC == 'o'
+        if preC ==  'L' || preC ==  'e' || preC ==  'd' || preC == 'o'
           return "Error6"
         end
-        preC = 'r'
+        preC = 'R'
       elsif c == '.' then
-        if preC == 'l' || preC == 'r' 
+        if preC == 'L' || preC == 'R' 
           return "Error6"
         end
         preC = 'd'
       elsif c == 'E' then
-        if preC == 'l' then
+        if preC == 'L' then
           return "Error6"
         end
         preC = 'e'
       elsif c.match(/[0-9]/) != nil then
-        if preC == 'r' then
+        if preC == 'R' then
           return "Error6"
         end
         preC = c
-      elsif c == 'c' || c == 'u' || c == 'b' || c == 'e'  then
-        #(g)cube(x)の前が数字、")","."の場合エラーを返す
-        if preC.match(/[0-9]/) != nil || preC == 'r' || preC == 'd' then
+      elsif c == 'c' || c == 'b' || c == 'r' || c == 't'  then
+        #(g)cbrt(x)の前が数字、")","."の場合エラーを返す
+        if preC.match(/[0-9]/) != nil || preC == 'R' || preC == 'd' then
           return "Error7"
         else
           preC = 'F'
         end 
       else
-        if preC == 'l' then
+        if preC == 'L' then
           return "Error6"
         end
         preC = 'o'
@@ -268,7 +268,7 @@ class Calc
 
   def calculateParenthesis(outerBlock)
     #(a)()内を再帰的に計算する。
-    #三乗根(cube)関数の変数と通常の括弧内の文字列を判別するために,"f"が出現した時の場合分けを追加する。
+    #立方根(cbrt)関数の変数と通常の括弧内の文字列を判別するために,"f"が出現した時の場合分けを追加する。
     innerBlock = []
     while !@tokens.empty? do
       c = @tokens.shift
@@ -279,7 +279,7 @@ class Calc
         return outerBlock
       elsif c == 'f' then
         @tokens.shift
-        outerBlock << calcCube(calculateParenthesis(innerBlock))
+        outerBlock << calcCbrt(calculateParenthesis(innerBlock))
       else
         innerBlock << c
       end
@@ -344,8 +344,19 @@ class Calc
     end
   end
 
-  def calcCube(array)
-    return syntaxAnalysis(array)*2
+  def calcCbrt(array)
+    #立方根の計算にはニュートン法を使用する
+    a = array[0]
+    e = 0.00000001
+    x = 10000
+    while true do
+      x2 = x - ((x*x*x)-a)/(3*x*x) 
+      if (x2-x).abs < e then
+        break
+      end
+      x = x2
+    end
+    return x.round(3)
   end
 
   def setArray(formula)
@@ -355,7 +366,7 @@ class Calc
   def outputErrorMessage(errorNum)
     case errorNum
     when "Error1" then
-      return "Error Message 1 : 数式に[0-9],'+','-','*','/','E','.','cube'以外の文字が含まれているか、先頭、末尾に不適切な文字が入力されています"
+      return "Error Message 1 : 数式に[0-9],'+','-','*','/','E','.','cbrt'以外の文字が含まれているか、先頭、末尾に不適切な文字が入力されています"
     when "Error2" then
       return "Error Message 2 : 数式内で'+','-','*','/','E','.'が連続して入力されています"
     when "Error3" then
@@ -367,7 +378,7 @@ class Calc
     when "Error6" then
       return "Error Message 6 : ')'もしくは'('の前後に不適切な文字が入力されています"
     when "Error7" then
-      return "Error Message 7 : cube関数の形式が異なります"
+      return "Error Message 7 : cbrt関数の形式が異なります"
     end
   end
 
