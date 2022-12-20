@@ -46,7 +46,7 @@ class Test < Minitest::Test
     assert_equal expected, actual
   end
 
-  def test_level1_abnormal4
+  def test_level2_abnormal4
     #異常系テスト
     #数式内で演算子が連続した場合、エラーメッセージを返すこと。
     setup
@@ -56,7 +56,7 @@ class Test < Minitest::Test
     assert_equal expected, actual
   end
 
-  def test_level1_abnormal5
+  def test_level2_abnormal5
     #異常系テスト
     #演算子間に"."が2回以上含まれていた場合、エラーメッセージを返すこと。
     setup
