@@ -75,11 +75,17 @@ tokens[0] = 6
 class Calc
 
   def initialize
-    #コマンドラインから入力された時、標準入出力を受け付ける。(テスト時には受け付けない。)
-    if __FILE__ == $0
-      input = gets.chomp
-      puts calc_main(input)
+    begin
+      #コマンドラインから入力された時、標準入出力を受け付ける。(テスト時には受け付けない。)
+      if __FILE__ == $0
+        input = gets.chomp
+        puts calc_main(input)
+      end   
+  
+    rescue StandartError => e
+      puts e.message
     end
+
   end
 
   def calc_main(input)
@@ -108,7 +114,7 @@ class Calc
       return syntaxAnalysis(block)
     end
   end
-  
+
   def calculateParenthesis(outerBlock)
     #(a)()内を再帰的に計算する。
     #立方根(cbrt)関数の変数と通常の括弧内の文字列を判別するために,"f"が出現した時の場合分けを追加する。
@@ -153,7 +159,7 @@ class Calc
     #(a)数式に[0-9],"+","-","*","/","E",".","cbrt"以外の文字が含まれていた場合エラーを返す
     #(b)数式の先頭、末尾が数字以外の場合エラーを返す
     if (formula =~ /^(cbrt\(|[0-9()])(cbrt\(|[0-9\*\+\-\/\E\.()])*[0-9)]$/) == nil then
-      return "Error1"
+      raise StandardError, "Error Message 1 : 数式に[0-9],'+','-','*','/','E','.','cbrt'以外の文字が含まれているか、先頭、末尾に不適切な文字が入力されています"
     end
     #(c)数式内で"+","-","*","/","E","."が連続した場合エラーを返す
     setArray(formula)
@@ -169,7 +175,7 @@ class Calc
         pNum -=1
         #(d)数式を左から確認し、")"の個数が"("を超過した場合エラーを返す
         if pNum < 0 then
-          return "Error4"
+          raise StandardError, "Error Message 4 : 数式の途中で')'の個数が'('を超過しています"
         else
           preC = 'R'
         end
@@ -177,7 +183,7 @@ class Calc
         preC = 'F'
       else
         if preC == 'O' then
-          return "Error2"
+          raise StandardError, "Error Message 2 : 数式内で'+','-','*','/','E','.'が連続して入力されています"
         else
           preC = 'O'
         end
@@ -185,7 +191,7 @@ class Calc
     end
     #(e)")"の個数と"("の個数が異なっていた場合エラーを返す
     if pNum != 0 then
-      return "Error5"
+      raise StandardError, "Error Message 5 : ')'の個数と'('の個数が異なります"
     end
     # (f)以下の規則から外れていた場合、エラーを返す
     # ・"("の前が数字、")"、"."の場合エラーを返す
@@ -196,39 +202,39 @@ class Calc
     @formulaArray.each do |c|
       if c == '(' then
         if preC.match(/[0-9]/) != nil || preC ==  'R' || preC ==  'd' 
-          return "Error6"
+          raise StandardError, "Error Message 6 : ')'もしくは'('の前後に不適切な文字が入力されています"
         end
         preC = 'L'
       elsif c == ')' then
         if preC ==  'L' || preC ==  'e' || preC ==  'd' || preC == 'o'
-          return "Error6"
+          raise StandardError, "Error Message 6 : ')'もしくは'('の前後に不適切な文字が入力されています"
         end
         preC = 'R'
       elsif c == '.' then
         if preC == 'L' || preC == 'R' 
-          return "Error6"
+          raise StandardError, "Error Message 6 : ')'もしくは'('の前後に不適切な文字が入力されています"
         end
         preC = 'd'
       elsif c == 'E' then
         if preC == 'L' then
-          return "Error6"
+          raise StandardError, "Error Message 6 : ')'もしくは'('の前後に不適切な文字が入力されています"
         end
         preC = 'e'
       elsif c.match(/[0-9]/) != nil then
         if preC == 'R' then
-          return "Error6"
+          raise StandardError, "Error Message 6 : ')'もしくは'('の前後に不適切な文字が入力されています"
         end
         preC = c
       elsif c == 'c' || c == 'b' || c == 'r' || c == 't'  then
         #(g)cbrt(x)の前が数字、")","."の場合エラーを返す
         if preC.match(/[0-9]/) != nil || preC == 'R' || preC == 'd' then
-          return "Error7"
+          raise StandardError, "Error Message 7 : cbrt関数の形式が異なります"
         else
           preC = 'F'
         end 
       else
         if preC == 'L' then
-          return "Error6"
+          raise StandardError, "Error Message 6 : ')'もしくは'('の前後に不適切な文字が入力されています"
         end
         preC = 'o'
       end 
@@ -253,9 +259,6 @@ class Calc
       if c.match(/[0-9\.]/) then
         #数字が連続する場合、preCに結合していくことで対応
         preC = fixInteger(preC,c)
-        if preC == "Error3" then
-          return "Error3"
-        end
       else
         if preC.match(/[0-9]/) then
           #演算子の場合、preCが数値で確定するので配列に格納
@@ -299,14 +302,11 @@ class Calc
     if c.match(/[\.]/) then
       @countD += 1 
       if @countD >= 2 then
-        return "Error3"
+        raise StandardError, "Error Message 3 : 演算子間に'.'が2回以上入力されています"
       end
     end
     return preC
   end
-
- 
-
 
   def setQueue(tokens)
     #(b)数式の計算順を定める。
@@ -349,7 +349,7 @@ class Calc
     #立方根の計算にはニュートン法を使用する
     a = array[0]
     if a < 0 then
-      outputErrorMessage('Error8')
+      raise StandardError, "Error Message 8 : cbrt関数の変数が負の値です"
     else
       e = 0.00000001
       x = 10000
@@ -366,33 +366,6 @@ class Calc
 
   def setArray(formula)
     @formulaArray = formula.split("")
-  end
-
-  def outputErrorMessage(errorNum)
-    case errorNum
-    when "Error1" then
-      message =  "Error Message 1 : 数式に[0-9],'+','-','*','/','E','.','cbrt'以外の文字が含まれているか、先頭、末尾に不適切な文字が入力されています"
-    when "Error2" then
-      message =  "Error Message 2 : 数式内で'+','-','*','/','E','.'が連続して入力されています"
-    when "Error3" then
-      message =  "Error Message 3 : 演算子間に'.'が2回以上入力されています"
-    when "Error4" then
-      message =  "Error Message 4 : 数式の途中で')'の個数が'('を超過しています"
-    when "Error5" then
-      message =  "Error Message 5 : ')'の個数と'('の個数が異なります"
-    when "Error6" then
-      message =  "Error Message 6 : ')'もしくは'('の前後に不適切な文字が入力されています"
-    when "Error7" then
-      message =  "Error Message 7 : cbrt関数の形式が異なります"
-    when "Error8" then
-      message =  "Error Message 8 : cbrt関数の変数が負の値です"
-    end
-    if __FILE__ == $0
-      puts message
-      exit
-    else 
-      return message
-    end
   end
 
 end
