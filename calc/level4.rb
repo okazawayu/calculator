@@ -108,7 +108,46 @@ class Calc
       return syntaxAnalysis(block)
     end
   end
+  
+  def calculateParenthesis(outerBlock)
+    #(a)()内を再帰的に計算する。
+    #立方根(cbrt)関数の変数と通常の括弧内の文字列を判別するために,"f"が出現した時の場合分けを追加する。
+    innerBlock = []
+    while !@tokens.empty? do
+      c = @tokens.shift
+      if c == 'l' then
+        innerBlock = calculateParenthesis(innerBlock)
+      elsif c == 'r' then
+        outerBlock << syntaxAnalysis(innerBlock)
+        return outerBlock
+      elsif c == 'f' then
+        @tokens.shift
+        outerBlock << calcCbrt(calculateParenthesis(innerBlock))
+      else
+        innerBlock << c
+      end
+    end
+  end
 
+  def syntaxAnalysis(tokens)
+    #queueを作成する
+    queue = setQueue(tokens)
+    num = queue.length
+    #(c)queueに格納された計算順に従いtokensを計算する。
+    num.times do
+      opeNum = queue.shift
+      #計算後、tokensを更新
+      tokens[opeNum - 1] = atomCalc(tokens[opeNum],tokens[opeNum - 1],tokens[opeNum + 1])
+      tokens.slice!(opeNum,2)
+      #queueを更新
+      queue.each_with_index do |e,i|
+        if e > opeNum then
+          queue[i] = e - 2
+        end
+      end
+    end
+    return tokens[0]
+  end
 
   def checkFormula(formula)
     #(a)数式に[0-9],"+","-","*","/","E",".","cbrt"以外の文字が含まれていた場合エラーを返す
@@ -266,45 +305,7 @@ class Calc
     return preC
   end
 
-  def calculateParenthesis(outerBlock)
-    #(a)()内を再帰的に計算する。
-    #立方根(cbrt)関数の変数と通常の括弧内の文字列を判別するために,"f"が出現した時の場合分けを追加する。
-    innerBlock = []
-    while !@tokens.empty? do
-      c = @tokens.shift
-      if c == 'l' then
-        outerBlock = calculateParenthesis(innerBlock)
-      elsif c == 'r' then
-        outerBlock << syntaxAnalysis(innerBlock)
-        return outerBlock
-      elsif c == 'f' then
-        @tokens.shift
-        outerBlock << calcCbrt(calculateParenthesis(innerBlock))
-      else
-        innerBlock << c
-      end
-    end
-  end
-
-  def syntaxAnalysis(tokens)
-    #queueを作成する
-    queue = setQueue(tokens)
-    num = queue.length
-    #(c)queueに格納された計算順に従いtokensを計算する。
-    num.times do
-      opeNum = queue.shift
-      #計算後、tokensを更新
-      tokens[opeNum - 1] = atomCalc(tokens[opeNum],tokens[opeNum - 1],tokens[opeNum + 1])
-      tokens.slice!(opeNum,2)
-      #queueを更新
-      queue.each_with_index do |e,i|
-        if e > opeNum then
-          queue[i] = e - 2
-        end
-      end
-    end
-    return tokens[0]
-  end
+ 
 
 
   def setQueue(tokens)
@@ -347,16 +348,20 @@ class Calc
   def calcCbrt(array)
     #立方根の計算にはニュートン法を使用する
     a = array[0]
-    e = 0.00000001
-    x = 10000
-    while true do
-      x2 = x - ((x*x*x)-a)/(3*x*x) 
-      if (x2-x).abs < e then
-        break
+    if a < 0 then
+      outputErrorMessage('Error8')
+    else
+      e = 0.00000001
+      x = 10000
+      while true do
+        x2 = x - ((x*x*x)-a)/(3*x*x) 
+        if (x2-x).abs < e then
+          break
+        end
+        x = x2
       end
-      x = x2
+      return x.round(3)
     end
-    return x.round(3)
   end
 
   def setArray(formula)
@@ -366,19 +371,27 @@ class Calc
   def outputErrorMessage(errorNum)
     case errorNum
     when "Error1" then
-      return "Error Message 1 : 数式に[0-9],'+','-','*','/','E','.','cbrt'以外の文字が含まれているか、先頭、末尾に不適切な文字が入力されています"
+      message =  "Error Message 1 : 数式に[0-9],'+','-','*','/','E','.','cbrt'以外の文字が含まれているか、先頭、末尾に不適切な文字が入力されています"
     when "Error2" then
-      return "Error Message 2 : 数式内で'+','-','*','/','E','.'が連続して入力されています"
+      message =  "Error Message 2 : 数式内で'+','-','*','/','E','.'が連続して入力されています"
     when "Error3" then
-      return "Error Message 3 : 演算子間に'.'が2回以上入力されています"
+      message =  "Error Message 3 : 演算子間に'.'が2回以上入力されています"
     when "Error4" then
-      return "Error Message 4 : 数式の途中で')'の個数が'('を超過しています"
+      message =  "Error Message 4 : 数式の途中で')'の個数が'('を超過しています"
     when "Error5" then
-      return "Error Message 5 : ')'の個数と'('の個数が異なります"
+      message =  "Error Message 5 : ')'の個数と'('の個数が異なります"
     when "Error6" then
-      return "Error Message 6 : ')'もしくは'('の前後に不適切な文字が入力されています"
+      message =  "Error Message 6 : ')'もしくは'('の前後に不適切な文字が入力されています"
     when "Error7" then
-      return "Error Message 7 : cbrt関数の形式が異なります"
+      message =  "Error Message 7 : cbrt関数の形式が異なります"
+    when "Error8" then
+      message =  "Error Message 8 : cbrt関数の変数が負の値です"
+    end
+    if __FILE__ == $0
+      puts message
+      exit
+    else 
+      return message
     end
   end
 

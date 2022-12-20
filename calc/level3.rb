@@ -243,7 +243,7 @@ class Calc
     while !@tokens.empty? do
       c = @tokens.shift
       if c == 'l' then
-        outerBlock = calculateParenthesis(innerBlock)
+        innerBlock = calculateParenthesis(innerBlock)
       elsif c == 'r' then
         outerBlock << syntaxAnalysis(innerBlock)
         return outerBlock
